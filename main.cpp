@@ -227,15 +227,36 @@ void FCFS(std::string filename) {
 	std::cout << "time " << t << "ms: Simulator started for FCFS [Q <empty>]" << std::endl;
 	for(int i = 0; i < processes.size(); i++){
 		total += processes[i].numburst;
+		std::cout << processes[i].ID << " numburst:  " << processes[i].numburst << std::endl;	
 	}
+	std::cout << "total:  " << total << std::endl;
 
 	while( finished < total ) {
 		for( int j = 0; j < processes.size(); ++j ) {
 			if ( processes[j].arrival == t ) {
 				ready.push(processes[j]);
+				//std::cout << "ready back:  " << ready.back().ID << std::endl;
+				//std::cout << "how about the front:  " << ready.front().ID << std::endl;
 				processes[j].arrived = 1;
+				std::cout << "Process " << processes[j].ID << " has arrived at time " << t << std::endl;
+
+				std::vector<Process> it2;
+	  			std::vector<Process>::iterator iter2;
+				while( !(ready.empty()) ) {
+	        		iter2 = it2.insert( it2.begin(), ready.front() );
+	        		ready.pop();
+				}	
+				for( iter2 = it2.begin(); iter2 != it2.end(); ++iter2 ) {
+					std::cout << "Process " << (*iter2).ID << " is number " << j << " of the ready processes" << std::endl;
+				}
+				while( !(it2.empty()) ) {
+					ready.push(it2.front());
+					it2.pop_back();
+				}
 			}
 		}
+
+		//std::cout << "first on ready:  " << ready.front().ID << std::endl;
 
 		if ( !(running.empty()) ){
 			running.front().timer -= 1;
@@ -249,10 +270,16 @@ void FCFS(std::string filename) {
 					std::cout << "Finished one burst" << running.front().ID << std::endl;
 				}
 				running.pop();
+				++finished;
+				std::cout << "finished:  " << finished << std::endl;
 			}
+
 		}
 		if( running.empty() && !(ready.empty()) ) {
+			std::cout << "Switching the active process to " << ready.front().ID << " at time " << t << std::endl;
+			//std::cout << "ready front:  " << ready.front().ID << std::endl;
 			running.push( ready.front() );
+			//std::cout << "running front:  " << running.front().ID << std::endl;
 			ready.pop();
 			running.front().timer = running.front().burst;
 			if( whileBurst > 0 ) {
@@ -278,6 +305,8 @@ void FCFS(std::string filename) {
 		}
 		
 		++t;
+		//std::cout << "running:  " << running.front().ID << " at time " << t << std::endl;
+		//std::cout << "the time has now reached:  " << t << std::endl;
 	}
 }
 
