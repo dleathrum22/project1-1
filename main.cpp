@@ -44,6 +44,7 @@ public:
 	void setNum(int num){numburst = num;}
 	void setIo(int io) {IO = io;}
 	void countBurst() { numburst--; }
+	void setWaitIO() { wait = IO; }
 };
 
 
@@ -216,9 +217,13 @@ void readFile(std::string filename, std::vector<Process> &processes){
 
 void FCFS(std::string filename) {
 	std::vector<Process> processes;
+	std::vector<Process> blocked;
+	std::vector<Process>::iterator iterator;
 	int finished = 0;
 	int total = 0;
 	int t = 0;
+	int swi1 = 0;
+	int swi2 = 0;
 	int whileBurst = 6;
 	readFile(filename, processes);
 	std::queue<Process> ready;
@@ -239,71 +244,83 @@ void FCFS(std::string filename) {
 				//std::cout << "how about the front:  " << ready.front().ID << std::endl;
 				processes[j].arrived = 1;
 				std::cout << "Process " << processes[j].ID << " has arrived at time " << t << std::endl;
-
-				std::vector<Process> it2;
-	  			std::vector<Process>::iterator iter2;
-				while( !(ready.empty()) ) {
-	        		iter2 = it2.insert( it2.begin(), ready.front() );
-	        		ready.pop();
-				}	
-				for( iter2 = it2.begin(); iter2 != it2.end(); ++iter2 ) {
-					std::cout << "Process " << (*iter2).ID << " is number " << j << " of the ready processes" << std::endl;
-				}
-				while( !(it2.empty()) ) {
-					ready.push(it2.front());
-					it2.pop_back();
-				}
 			}
 		}
 
 		//std::cout << "first on ready:  " << ready.front().ID << std::endl;
 
-		if ( !(running.empty()) ){
-			running.front().timer -= 1;
-			if( running.front().timer == 0 ) {
-				running.front().numburst -= 1;
-				if ( running.front().numburst == 0 ) {
-					std::cout << "Finished " << running.front().ID << std::endl;
+		if( (swi1 <= 0) && (swi2 <= 0) ) {
+			if ( !(running.empty()) ){
+				running.front().timer -= 1;
+				if( running.front().timer == 0 ) {
+					swi2 = 3;
+					running.front().numburst -= 1;
+					if ( running.front().numburst == 0 ) {
+						std::cout << "Finished " << running.front().ID << " at time " << t << std::endl;
+					}
+					else {
+						//ready.push( running.front() );
+						iterator = blocked.end();
+						blocked.insert(iterator, running.front() );
+						blocked.back().setWaitIO();
+						std::cout << "Finished one burst of " << running.front().ID << " with " << running.front().numburst << " left at time " << t << std::endl;
+					}
+					++finished;
+					running.pop();
+					std::cout << "finished:  " << finished << std::endl;
 				}
-				else {
-					ready.push( running.front() );
-					std::cout << "Finished one burst" << running.front().ID << std::endl;
-				}
-				running.pop();
-				++finished;
-				std::cout << "finished:  " << finished << std::endl;
-			}
 
-		}
-		if( running.empty() && !(ready.empty()) ) {
-			std::cout << "Switching the active process to " << ready.front().ID << " at time " << t << std::endl;
-			//std::cout << "ready front:  " << ready.front().ID << std::endl;
-			running.push( ready.front() );
-			//std::cout << "running front:  " << running.front().ID << std::endl;
-			ready.pop();
-			running.front().timer = running.front().burst;
-			if( whileBurst > 0 ) {
-				--whileBurst;
 			}
-			whileBurst = 6;
-		}
-		
-		if ( !(ready.empty()) ) {
-			std::vector<Process> it;
-  			std::vector<Process>::iterator iter;
-			while( !(ready.empty()) ) {
-        		iter = it.insert( it.begin(), ready.front() );
-        		ready.pop();
-			}	
-			for( iter = it.begin(); iter != it.end(); ++iter ) {
-				(*iter).waitTime += 1;
+			if( running.empty() && !(ready.empty()) ) {
+				std::cout << "Switching the active process to " << ready.front().ID << " at time " << t << std::endl;
+				swi1 = 3;
+				//std::cout << "ready front:  " << ready.front().ID << std::endl;
+				running.push( ready.front() );
+				//std::cout << "running front:  " << running.front().ID << std::endl;
+				ready.pop();
+				running.front().timer = running.front().burst;
+				if( whileBurst > 0 ) {
+					--whileBurst;
+				}
+				whileBurst = 6;
 			}
-			while( !(it.empty()) ) {
-				ready.push(it.front());
-				it.pop_back();
+			
+			// for( int k = 0; k < processes.size(); ++k ) {
+			// 	if( (processes[k].arrived == 1) && (processes[k].ID != running.front().ID) ) {
+
+			// 	}
+			// }
+
+			iterator = blocked.begin();
+			//std::cout << "entering blocked checker" << std::endl;
+			if( !(blocked.empty()) ) {
+				for( int u = 0; u < blocked.size(); ++u ) {
+					blocked[u].wait -= 1;
+					if( blocked[u].wait == 0 ) {
+						ready.push( blocked[u] );
+						blocked.erase( iterator );
+					}
+					iterator++;
+				}
 			}
 		}
-		
+		// if ( !(ready.empty()) ) {
+		// 	std::vector<Process> it;
+  // 			std::vector<Process>::iterator iter;
+		// 	while( !(ready.empty()) ) {
+  //       		iter = it.insert( it.begin(), ready.front() );
+  //       		ready.pop();
+		// 	}	
+		// 	for( iter = it.begin(); iter != it.end(); ++iter ) {
+		// 		(*iter).waitTime += 1;
+		// 	}
+		// 	while( !(it.empty()) ) {
+		// 		ready.push(it.front());
+		// 		it.pop_back();
+		// 	}
+		// }
+		--swi1;
+		--swi2;
 		++t;
 		//std::cout << "running:  " << running.front().ID << " at time " << t << std::endl;
 		//std::cout << "the time has now reached:  " << t << std::endl;
