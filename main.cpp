@@ -47,6 +47,18 @@ public:
 	void setWaitIO() { wait = IO; }
 };
 
+std::string printQ( std::queue<Process> &q ) {
+	//std::cout << "in printQ" << std::endl;
+	std::string storage;
+	while( !(q.empty()) ) {
+		storage += " ";
+		storage += q.front().ID;
+		q.pop();
+	}
+	if( storage == "" ) { storage = " <empty>"; }
+	return storage;
+}
+
 
 void readFile(std::string filename, std::vector<Process> &processes){
 	// std::cout << "Started readFile\n";
@@ -224,6 +236,7 @@ void FCFS(std::string filename) {
 	int t = 0;
 	int swi1 = 0;
 	int swi2 = 0;
+	std::string str;
 	int whileBurst = 6;
 	readFile(filename, processes);
 	std::queue<Process> ready;
@@ -232,9 +245,9 @@ void FCFS(std::string filename) {
 	std::cout << "time " << t << "ms: Simulator started for FCFS [Q <empty>]" << std::endl;
 	for(int i = 0; i < processes.size(); i++){
 		total += processes[i].numburst;
-		std::cout << processes[i].ID << " numburst:  " << processes[i].numburst << std::endl;	
+		//std::cout << processes[i].ID << " numburst:  " << processes[i].numburst << std::endl;	
 	}
-	std::cout << "total:  " << total << std::endl;
+	//std::cout << "total:  " << total << std::endl;
 
 	while( finished < total ) {
 		for( int j = 0; j < processes.size(); ++j ) {
@@ -243,36 +256,50 @@ void FCFS(std::string filename) {
 				//std::cout << "ready back:  " << ready.back().ID << std::endl;
 				//std::cout << "how about the front:  " << ready.front().ID << std::endl;
 				processes[j].arrived = 1;
-				std::cout << "Process " << processes[j].ID << " has arrived at time " << t << std::endl;
+				str = printQ( ready );
+				std::cout << "time " << t << "ms: Process " << processes[j].ID << " has arrived and added to ready queue [Q" << str << "]" << std::endl;
 			}
 		}
 
 		//std::cout << "first on ready:  " << ready.front().ID << std::endl;
 
 		if( (swi1 <= 0) && (swi2 <= 0) ) {
+			if( swi2 == 0 ) {
+				str = printQ( ready );
+				std::cout << "time " << t << "ms: Process " << running.front().ID <<  " started using the CPU [Q" << str << "]" << std::endl;
+			}
 			if ( !(running.empty()) ){
 				running.front().timer -= 1;
 				if( running.front().timer == 0 ) {
 					swi2 = 3;
 					running.front().numburst -= 1;
 					if ( running.front().numburst == 0 ) {
-						std::cout << "Finished " << running.front().ID << " at time " << t << std::endl;
+						str = printQ( ready );
+						std::cout << "time " << t << "ms: Process "<< running.front().ID << " completed a CPU burst; " << running.front().numburst << " bursts to go [Q" << str << "]" << std::endl;
+						std::cout << "time " << t << "ms: Process "<< running.front().ID << " terminated [Q" << str << "]" << std::endl;
+						//std::cout << "time " << t << "ms: Process " running.front()>ID << " "erminated
+						//std::cout << "Finished " << running.front().ID << " at time " << t << std::endl;
 					}
 					else {
 						//ready.push( running.front() );
 						iterator = blocked.end();
 						blocked.insert(iterator, running.front() );
 						blocked.back().setWaitIO();
-						std::cout << "Finished one burst of " << running.front().ID << " with " << running.front().numburst << " left at time " << t << std::endl;
+						int till = t + running.front().wait;
+						str = printQ( ready );
+						std::cout << "time " << t << "ms: Process " << running.front().ID << " switching out of CPU; will block in I/O until time " << till << "ms [Q" << str << "]" << std::endl;
+						//std::cout << "Finished one burst of " << running.front().ID << " with " << running.front().numburst << " left at time " << t << std::endl;
 					}
 					++finished;
 					running.pop();
-					std::cout << "finished:  " << finished << std::endl;
+					//std::cout << "finished:  " << finished << std::endl;
 				}
 
 			}
 			if( running.empty() && !(ready.empty()) ) {
-				std::cout << "Switching the active process to " << ready.front().ID << " at time " << t << std::endl;
+				str = printQ( ready );
+				std::cout << "time " << t << "ms: Process " << ready.front().ID << " started using the CPU [Q" << str << "]" << std::endl;
+				//std::cout << "Switching the active process to " << ready.front().ID << " at time " << t << std::endl;
 				swi1 = 3;
 				//std::cout << "ready front:  " << ready.front().ID << std::endl;
 				running.push( ready.front() );
@@ -304,6 +331,7 @@ void FCFS(std::string filename) {
 				}
 			}
 		}
+
 		// if ( !(ready.empty()) ) {
 		// 	std::vector<Process> it;
   // 			std::vector<Process>::iterator iter;
@@ -325,7 +353,10 @@ void FCFS(std::string filename) {
 		//std::cout << "running:  " << running.front().ID << " at time " << t << std::endl;
 		//std::cout << "the time has now reached:  " << t << std::endl;
 	}
+	t += 3;
+	std::cout << "time " << t << "ms: Simulator ended for FCFS" << std::endl;
 }
+
 
 int main(int argc, char** argv){
 	std::string filename = argv[1];
